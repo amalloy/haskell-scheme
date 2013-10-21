@@ -5,7 +5,7 @@ import Data.List
 type Env = [(String, Value)]
 
 data Value = Nil | Cons {car::Value, cdr::Value}
-           | Lambda ([Value] -> Value) Value
+           | Lambda {fn::([Value] -> Value), source::Value}
            | Symbol String
 
 instance Eq Value where
@@ -47,12 +47,29 @@ eval e (Cons a d) =
   in case s of
     "quote" -> Right $ car d
     "lambda" -> undefined -- this is the hard case
-    "eq" -> do
-      let (Cons x (Cons y Nil)) = d
-      a <- eval e x
-      b <- eval e y
-      return $ if a == b then (Symbol "t") else Nil
     "if" -> do
       let (Cons test (Cons t (Cons f Nil))) = d
       v <- eval e test
       eval e (if v == Nil then f else t)
+
+nativeCode :: Value
+nativeCode = (Cons (Symbol "native" (Cons (Symbol "code") Nil)))
+
+schemeFn :: ([Value] -> Value) -> Value
+schemeFn f = Lambda f nativeCode
+
+sEq :: Value
+sEq = schemeFn eq
+  where eq [x, y] = if x == y then (Symbol "t") else Nil
+
+sCons :: Value
+sCons = schemeFn Cons
+
+sCar :: Value
+sCar = schemeFn car
+
+sCdr :: Value
+sCdr = schemeFn cdr
+
+initialEnv :: Env
+initialEnv = [("eq?", sEq), ("cons", sCons), ("car", sCar), ("cdr", sCdr)]
