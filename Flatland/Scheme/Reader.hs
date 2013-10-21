@@ -6,7 +6,15 @@ import Data.List
 import Flatland.Scheme.Value
 
 parseValue :: CharParser () Value
-parseValue = try parseList <|> parseNil <|> parseSymbol
+parseValue = try parseList <|> parseQuote <|> parseNil <|> parseSymbol
+
+parseQuote :: CharParser () Value
+parseQuote = do
+  char '\''
+  many whitespace
+  e <- parseValue
+  many whitespace
+  return $ Cons (Symbol "quote") (Cons e Nil)
 
 parseNil :: CharParser () Value
 parseNil = (string "nil") >> return Nil
