@@ -42,16 +42,20 @@ eval :: Env -> Value -> Either String Value
 eval _ Nil = Right Nil
 eval e (Symbol s) = lookupEnv e s
 eval e (Lambda f source) = Left $ "Can't eval a function: " ++ show source
-eval e (Cons a d) =
-  let (Symbol s) = a
-      resolve = lookupEnv e
-  in case s of
-    "quote" -> Right $ car d
-    "lambda" -> undefined -- this is the hard case
-    "if" -> do
-      let (Cons test (Cons t (Cons f Nil))) = d
+eval e c@(Cons a d) =
+  let resolve = lookupEnv e
+  in case a of
+    (Symbol "quote") -> return $ car d
+    (Symbol "lambda") -> undefined -- this is the hard case
+    (Symbol "if") -> do
+      let [test, t, f] = asList d
       v <- eval e test
       eval e (if v == Nil then f else t)
+    otherwise -> do
+      (f:args) <- forM (asList c) (eval e)
+      case f of
+        (Lambda f source) -> f args
+        otherwise -> fail $ "Can't call " ++ (show f) ++ " as a function"
 
 nativeCode :: Value
 nativeCode = (Cons (Symbol "native" (Cons (Symbol "code") Nil)))
