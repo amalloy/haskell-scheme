@@ -18,7 +18,7 @@ instance Eq Value where
   (Symbol a) == (Symbol b) = a == b
 
 instance Show Value where
-  show Nil = "()"
+  show Nil = "nil"
   show (Symbol s) = s
   show (Lambda f source) = show source
   show c@(Cons a d) = "(" ++ (intercalate " " $ showList c) ++ ")"
