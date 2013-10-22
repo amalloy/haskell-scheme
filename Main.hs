@@ -1,4 +1,4 @@
-module Flatland.Scheme.Main (main) where
+module Main (main) where
 
 import Flatland.Scheme.Reader
 import System.IO
