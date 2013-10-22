@@ -58,7 +58,7 @@ eval e c@(Cons a d) =
         otherwise -> fail $ "Can't call " ++ (show f) ++ " as a function"
 
 nativeCode :: Value
-nativeCode = (Cons (Symbol "native" (Cons (Symbol "code") Nil)))
+nativeCode = asCons $ map Symbol ["native", "code"]
 
 schemeFn :: ([Value] -> Value) -> Value
 schemeFn f = Lambda f nativeCode
