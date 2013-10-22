@@ -7,7 +7,7 @@ type Env = [(String, Value)]
 
 data Value = Nil | Cons {car::Value, cdr::Value}
            | Lambda {fn::[Value] -> (Either String Value), source::Value}
-           | Symbol String
+           | Symbol {name::String}
 
 instance Eq Value where
   Nil == Nil = True
