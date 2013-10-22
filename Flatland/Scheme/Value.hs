@@ -1,11 +1,12 @@
 module Flatland.Scheme.Value where
 
 import Data.List
+import Control.Monad.Error
 
 type Env = [(String, Value)]
 
 data Value = Nil | Cons {car::Value, cdr::Value}
-           | Lambda {fn::([Value] -> Value), source::Value}
+           | Lambda {fn::[Value] -> (Either String Value), source::Value}
            | Symbol String
 
 instance Eq Value where
