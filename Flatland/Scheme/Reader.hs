@@ -1,9 +1,10 @@
-module Flatland.Scheme.Reader where
+module Flatland.Scheme.Reader (read, readEval) where
 
 import Text.ParserCombinators.Parsec
 import Control.Monad
 import Data.List
 import Flatland.Scheme.Value
+import Prelude hiding (read)
 
 parseValue :: CharParser () Value
 parseValue = try parseList <|> parseQuote <|> parseNil <|> parseSymbol
@@ -33,3 +34,15 @@ parseList = do
   char ')'
   many whitespace
   return $ foldr Cons Nil exprs
+
+read :: String -> Either ParseError Value
+read = runParser parseValue () "stdin"
+
+-- this function doesn't belong here long-term, but is useful for playing around
+readEval :: String -> Either (Either ParseError String) Value
+readEval s =
+  case (read s) of
+    (Left e) -> Left $ Left e
+    (Right v) -> case (eval initialEnv v) of
+      (Left e) -> Left $ Right e
+      (Right v) -> Right v
