@@ -38,6 +38,9 @@ lookupEnv e s = case (lookup s e) of
   Nothing -> Left $ "Unable to resolve symbol: " ++ s
   Just v -> Right v
 
+withEnv :: Env -> String -> Value -> Env
+withEnv e name value = (name, value):e
+
 eval :: Env -> Value -> Either String Value
 eval _ Nil = Right Nil
 eval e (Symbol s) = lookupEnv e s
