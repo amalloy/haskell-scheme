@@ -60,21 +60,34 @@ eval e c@(Cons a d) =
 nativeCode :: Value
 nativeCode = asCons $ map Symbol ["native", "code"]
 
-schemeFn :: ([Value] -> Value) -> Value
-schemeFn f = Lambda f nativeCode
+schemeFn :: String -> (Value -> Either String Value) -> Value
+schemeFn name f = Lambda g nativeCode
+  where g [x] = f x
+        g _ = fail $ name ++ " requires exactly one argument"
+
+schemeFn2 :: String -> (Value -> Value -> Either String Value) -> Value
+schemeFn2 name f = Lambda g nativeCode
+  where g [x, y] = f x y
+        g _ = fail $ name ++ " requires exactly two arguments"
 
 sEq :: Value
-sEq = schemeFn eq
-  where eq [x, y] = if x == y then (Symbol "t") else Nil
+sEq = schemeFn2 "eq?" eq
+  where eq x y = return $ if x == y then (Symbol "t") else Nil
 
 sCons :: Value
-sCons = schemeFn Cons
+-- sCons = schemeFn2 "cons" (return .) . Cons -- this would work, but confuses me
+sCons = schemeFn2 "cons" cons
+  where cons a d = return $ Cons a d
 
 sCar :: Value
-sCar = schemeFn car
+sCar = schemeFn "car" car
+  where car (Cons a d) = return a
+        car x = fail $ "Can't get car of non-cons: " ++ (show x)
 
 sCdr :: Value
-sCdr = schemeFn cdr
+sCdr = schemeFn "cdr" cdr
+  where cdr (Cons a d) = return d
+        cdr x = fail $ "Can't get cdr of non-cons: " ++ (show x)
 
 initialEnv :: Env
 initialEnv = [("eq?", sEq), ("cons", sCons), ("car", sCar), ("cdr", sCdr)]
