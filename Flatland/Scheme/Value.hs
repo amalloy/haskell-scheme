@@ -49,7 +49,7 @@ eval e c@(Cons a d) =
   let resolve = lookupEnv e
   in case a of
     (Symbol "quote") -> return $ car d
-    (Symbol "lambda") -> undefined -- this is the hard case
+    (Symbol "lambda") -> evalLambda e d
     (Symbol "if") -> do
       let [test, t, f] = asList d
       v <- eval e test
@@ -59,6 +59,14 @@ eval e c@(Cons a d) =
       case f of
         (Lambda f source) -> f args
         otherwise -> fail $ "Can't call " ++ (show f) ++ " as a function"
+
+evalLambda :: Env -> Value -> Either String Value
+evalLambda e fnbody = do
+  let [arglist,body] = asList fnbody
+      params = asList arglist
+      f args = eval (((map name params) `zip` args) ++ e) body
+  return $ Lambda f (Cons (Symbol "lambda") fnbody)
+
 
 nativeCode :: Value
 nativeCode = asCons $ map Symbol ["native", "code"]
