@@ -4,6 +4,4 @@ import Flatland.Scheme.Reader
 import System.IO
 
 main :: IO ()
-main = do
-  program <- getContents
-  print (readEval program)
+main = interact (show . readEval)
