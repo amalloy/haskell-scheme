@@ -17,9 +17,6 @@ lookupEnv e s = case (lookup s e) of
   Nothing -> Left $ CompilerException $ UnresolvedSymbol s
   Just v -> Right v
 
-withEnv :: Env -> String -> Value -> Env
-withEnv e name value = (name, value):e
-
 eval :: Env -> Value -> Result
 eval _ Nil = Right Nil
 eval e (Symbol s) = lookupEnv e s
@@ -40,11 +37,18 @@ eval e c@(Cons a d) =
         (Lambda f source) -> f args
         otherwise -> Left $ RuntimeException $ TypeError [LambdaType] (typeOf f)
 
+withEnv :: [String] -> [Value] -> Env -> Either SchemeException Env
+withEnv params args e = if (paramCount /= argCount)
+                        then Left (RuntimeException $ ArityException paramCount argCount)
+                        else return $ (params `zip` args) ++ e
+  where paramCount = length params
+        argCount = length args
+
 evalLambda :: Env -> Value -> Result
 evalLambda e fnbody = do
   [arglist,body] <- asList "lambda body" fnbody
   params <- asList "lambda parameter list" arglist
-  let f args = eval (((map name params) `zip` args) ++ e) body
+  let f args = (withEnv (map name params) args e) >>= (flip eval) body
   return $ Lambda f (Cons (Symbol "lambda") fnbody)
 
 
