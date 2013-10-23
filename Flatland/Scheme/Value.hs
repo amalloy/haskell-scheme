@@ -1,83 +1,68 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
-
 module Flatland.Scheme.Value where
 
 import Data.List
 import Control.Monad.Error
+import Flatland.Scheme.Types
 
-type Env = [(String, Value)]
-type Lambda = [Value] -> (Either String Value)
-
-instance Eq Lambda where { _ == _ = False }
-
-data Value = Nil | Cons {car::Value, cdr::Value}
-           | Lambda {fn::Lambda, source::Value}
-           | Symbol {name::String}
-           deriving Eq
-
-instance Show Value where
-  show Nil = "nil"
-  show (Symbol s) = s
-  show (Lambda f source) = show source
-  show c@(Cons a d) = "(" ++ (intercalate " " $ showList c) ++ ")"
-    where showList (Cons a Nil) = [(show a)]
-          showList (Cons a d@(Cons _ _)) = show a : showList d
-          showList (Cons a d) = show a : "." : [show d]
-
-asList :: Value -> [Value]
-asList Nil = []
-asList (Cons a d) = a:asList d
+asList :: String -> Value -> Either SchemeException [Value]
+asList context Nil = return []
+asList context (Cons a d) = return . (a:) =<< asList context d
+asList context x = Left $ CompilerException $ ImproperListException context x
 
 asCons :: [Value] -> Value
 asCons = foldr Cons Nil
 
-lookupEnv :: Env -> String -> Either String Value
+lookupEnv :: Env -> String -> Result
 lookupEnv e s = case (lookup s e) of
-  Nothing -> Left $ "Unable to resolve symbol: " ++ s
+  Nothing -> Left $ CompilerException $ UnresolvedSymbol s
   Just v -> Right v
 
 withEnv :: Env -> String -> Value -> Env
 withEnv e name value = (name, value):e
 
-eval :: Env -> Value -> Either String Value
+eval :: Env -> Value -> Result
 eval _ Nil = Right Nil
 eval e (Symbol s) = lookupEnv e s
-eval e (Lambda f source) = Left $ "Can't eval a function: " ++ show source
+eval e (Lambda f source) = Left $ RuntimeException $ TypeError [NilType, ConsType, SymbolType] LambdaType
 eval e c@(Cons a d) =
   let resolve = lookupEnv e
   in case a of
     (Symbol "quote") -> return $ car d
     (Symbol "lambda") -> evalLambda e d
     (Symbol "if") -> do
-      let [test, t, f] = asList d
+      [test, t, f] <- asList "'if expression" d
       v <- eval e test
       eval e (if v == Nil then f else t)
     otherwise -> do
-      (f:args) <- forM (asList c) (eval e)
+      argList <- (asList "arguments to lambda" c)
+      (f:args) <- forM argList (eval e)
       case f of
         (Lambda f source) -> f args
-        otherwise -> fail $ "Can't call " ++ (show f) ++ " as a function"
+        otherwise -> Left $ RuntimeException $ TypeError [LambdaType] (typeOf f)
 
-evalLambda :: Env -> Value -> Either String Value
+evalLambda :: Env -> Value -> Result
 evalLambda e fnbody = do
-  let [arglist,body] = asList fnbody
-      params = asList arglist
-      f args = eval (((map name params) `zip` args) ++ e) body
+  [arglist,body] <- asList "lambda body" fnbody
+  params <- asList "lambda parameter list" arglist
+  let f args = eval (((map name params) `zip` args) ++ e) body
   return $ Lambda f (Cons (Symbol "lambda") fnbody)
 
 
 nativeCode :: Value
 nativeCode = asCons $ map Symbol ["native", "code"]
 
-schemeFn :: String -> (Value -> Either String Value) -> Value
+arityException :: Int -> Int -> SchemeException
+arityException expected actual = RuntimeException $ ArityException expected actual
+
+schemeFn :: String -> (Value -> Result) -> Value
 schemeFn name f = Lambda g nativeCode
   where g [x] = f x
-        g _ = fail $ name ++ " requires exactly one argument"
+        g args = Left $ arityException 1 (length args)
 
-schemeFn2 :: String -> (Value -> Value -> Either String Value) -> Value
+schemeFn2 :: String -> (Value -> Value -> Result) -> Value
 schemeFn2 name f = Lambda g nativeCode
   where g [x, y] = f x y
-        g _ = fail $ name ++ " requires exactly two arguments"
+        g args = Left $ arityException 2 (length args)
 
 sEq :: Value
 sEq = schemeFn2 "eq?" eq

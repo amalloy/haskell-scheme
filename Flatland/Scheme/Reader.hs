@@ -3,6 +3,7 @@ module Flatland.Scheme.Reader (read, readEval) where
 import Text.ParserCombinators.Parsec
 import Control.Monad
 import Data.List
+import Flatland.Scheme.Types
 import Flatland.Scheme.Value
 import Prelude hiding (read)
 
@@ -39,10 +40,8 @@ read :: String -> Either ParseError Value
 read = runParser parseValue () "stdin"
 
 -- this function doesn't belong here long-term, but is useful for playing around
-readEval :: String -> Either (Either ParseError String) Value
+readEval :: String -> Result
 readEval s =
   case (read s) of
-    (Left e) -> Left $ Left e
-    (Right v) -> case (eval initialEnv v) of
-      (Left e) -> Left $ Right e
-      (Right v) -> Right v
+    (Left e) -> Left (ReaderException e)
+    (Right v) -> eval initialEnv v
