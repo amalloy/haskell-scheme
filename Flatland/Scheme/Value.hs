@@ -1,21 +1,19 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+
 module Flatland.Scheme.Value where
 
 import Data.List
 import Control.Monad.Error
 
 type Env = [(String, Value)]
+type Lambda = [Value] -> (Either String Value)
+
+instance Eq Lambda where { _ == _ = False }
 
 data Value = Nil | Cons {car::Value, cdr::Value}
-           | Lambda {fn::[Value] -> (Either String Value), source::Value}
+           | Lambda {fn::Lambda, source::Value}
            | Symbol {name::String}
-
-instance Eq Value where
-  Nil == Nil = True
-  Nil == _ = False
-  (Cons a d) == (Cons a' d') = a == a' && d == d'
-  (Cons _ _) == _ = False
-  (Lambda _ _) == _ = False
-  (Symbol a) == (Symbol b) = a == b
+           deriving Eq
 
 instance Show Value where
   show Nil = "nil"
