@@ -41,9 +41,8 @@ eval e c@(Cons a d) =
         otherwise -> Left $ RuntimeException $ TypeError [LambdaType] (typeOf f)
 
 withEnv :: [String] -> [Value] -> Env -> Either SchemeException Env
-withEnv params args e = if (paramCount /= argCount)
-                        then Left (RuntimeException $ ArityException paramCount argCount)
-                        else return $ (params `zip` args) ++ e
+withEnv params args e | (paramCount == argCount) = return $ (params `zip` args) ++ e
+                      | otherwise = Left (RuntimeException $ ArityException paramCount argCount)
   where paramCount = length params
         argCount = length args
 
