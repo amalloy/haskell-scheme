@@ -27,9 +27,12 @@ eval e c@(Cons a d) =
     (Symbol "quote") -> return $ car d
     (Symbol "lambda") -> evalLambda e d
     (Symbol "if") -> do
-      [test, t, f] <- asList "'if expression" d
-      v <- eval e test
-      eval e (if v == Nil then f else t)
+      body <- asList "'if expression" d
+      case body of
+        [test, t, f] -> do
+          v <- eval e test
+          eval e (if v == Nil then f else t)
+        otherwise -> Left $ RuntimeException $ ArityException 3 (length body)
     otherwise -> do
       argList <- (asList "arguments to lambda" c)
       (f:args) <- forM argList (eval e)
