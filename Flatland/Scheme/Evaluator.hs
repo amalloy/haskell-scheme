@@ -18,7 +18,7 @@ lookupEnv e s = case (lookup s e) of
   Just v -> Right v
 
 eval :: Env -> Value -> Result
-eval _ Nil = Right Nil
+eval _ Nil = return Nil
 eval e (Symbol s) = lookupEnv e s
 eval e (Lambda f source) = Left $ RuntimeException $ TypeError [NilType, ConsType, SymbolType] LambdaType
 eval e c@(Cons a d) =
