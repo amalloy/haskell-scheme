@@ -4,7 +4,7 @@ import Text.ParserCombinators.Parsec
 import Control.Monad
 import Data.List
 import Flatland.Scheme.Types
-import Flatland.Scheme.Value
+import Flatland.Scheme.Evaluator
 import Prelude hiding (read)
 
 parseValue :: CharParser () Value

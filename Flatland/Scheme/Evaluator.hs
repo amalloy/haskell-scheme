@@ -1,4 +1,4 @@
-module Flatland.Scheme.Value where
+module Flatland.Scheme.Evaluator where
 
 import Data.List
 import Control.Monad.Error
