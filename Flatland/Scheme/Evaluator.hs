@@ -64,34 +64,35 @@ nativeCode = asCons $ map Symbol ["native", "code"]
 arityException :: Int -> Int -> SchemeException
 arityException expected actual = RuntimeException $ ArityException expected actual
 
-schemeFn :: String -> (Value -> Result) -> Value
-schemeFn name f = Lambda g nativeCode
+schemeFn :: (Value -> Result) -> Value
+schemeFn f = Lambda g nativeCode
   where g [x] = f x
         g args = Left $ arityException 1 (length args)
 
-schemeFn2 :: String -> (Value -> Value -> Result) -> Value
-schemeFn2 name f = Lambda g nativeCode
+schemeFn2 :: (Value -> Value -> Result) -> Value
+schemeFn2 f = Lambda g nativeCode
   where g [x, y] = f x y
         g args = Left $ arityException 2 (length args)
 
 sEq :: Value
-sEq = schemeFn2 "eq?" eq
+sEq = schemeFn2 eq
   where eq x y = return $ if x == y then (Symbol "t") else Nil
 
 sCons :: Value
 -- sCons = schemeFn2 "cons" (return .) . Cons -- this would work, but confuses me
-sCons = schemeFn2 "cons" cons
+sCons = schemeFn2 cons
   where cons a d = return $ Cons a d
 
+consFn :: (Value -> Value) -> Value
+consFn f = schemeFn g
+  where g c@(Cons _ _) = return (f c)
+        g x = Left $ RuntimeException $ TypeError [ConsType] (typeOf x)
+
 sCar :: Value
-sCar = schemeFn "car" car
-  where car (Cons a d) = return a
-        car x = fail $ "Can't get car of non-cons: " ++ (show x)
+sCar = consFn car
 
 sCdr :: Value
-sCdr = schemeFn "cdr" cdr
-  where cdr (Cons a d) = return d
-        cdr x = fail $ "Can't get cdr of non-cons: " ++ (show x)
+sCdr = consFn cdr
 
 initialEnv :: Env
 initialEnv = asCons $ map (\(s, x) -> (Cons (Symbol s) x)) $
