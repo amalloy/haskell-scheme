@@ -35,6 +35,7 @@ eval e c@(Cons a d) =
     otherwise -> do
       argList <- (asList "arguments to lambda" c)
       (f:args) <- forM argList (eval e)
+      -- note we're not handling [] at all - that case is impossible, because we already know we have a Cons
       case f of
         (Lambda f source) -> f args
         otherwise -> Left $ RuntimeException $ TypeError [LambdaType] (typeOf f)
