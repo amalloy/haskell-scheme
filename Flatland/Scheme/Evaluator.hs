@@ -4,6 +4,9 @@ import Data.List
 import Control.Monad.Error
 import Flatland.Scheme.Types
 
+arityException :: Int -> Int -> SchemeException
+arityException expected actual = RuntimeException $ ArityException expected actual
+
 asList :: String -> Value -> Either SchemeException [Value]
 asList context Nil = return []
 asList context (Cons a d) = return . (a:) =<< asList context d
@@ -34,7 +37,7 @@ eval e c@(Cons a d) =
         [test, t, f] -> do
           v <- eval e test
           eval e (if v == Nil then f else t)
-        otherwise -> Left $ RuntimeException $ ArityException 3 (length body)
+        otherwise -> Left $ arityException 3 (length body)
     otherwise -> do
       argList <- (asList "arguments to lambda" c)
       (f:args) <- forM argList (eval e)
@@ -46,7 +49,7 @@ eval e c@(Cons a d) =
 withEnv :: [Value] -> [Value] -> Env -> Either SchemeException Env
 withEnv params args e | (paramCount == argCount) = return $ foldr Cons e $
                                                    zipWith Cons params args
-                      | otherwise = Left (RuntimeException $ ArityException paramCount argCount)
+                      | otherwise = Left $ arityException paramCount argCount
   where paramCount = length params
         argCount = length args
 
@@ -60,9 +63,6 @@ evalLambda e fnbody = do
 
 nativeCode :: Value
 nativeCode = asCons $ map Symbol ["native", "code"]
-
-arityException :: Int -> Int -> SchemeException
-arityException expected actual = RuntimeException $ ArityException expected actual
 
 schemeFn :: (Value -> Result) -> Value
 schemeFn f = Lambda g nativeCode
