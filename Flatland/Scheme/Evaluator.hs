@@ -12,14 +12,17 @@ asList context x = Left $ CompilerException $ ImproperListException context x
 asCons :: [Value] -> Value
 asCons = foldr Cons Nil
 
-lookupEnv :: Env -> String -> Result
-lookupEnv e s = case (lookup s e) of
-  Nothing -> Left $ CompilerException $ UnresolvedSymbol s
-  Just v -> Right v
+lookupEnv :: Env -> Value -> Result
+lookupEnv (Cons (Cons (Symbol a) v) e) s@(Symbol b) | a == b = Right v
+                                                    | otherwise = lookupEnv e s
+lookupEnv Nil s = Left $ CompilerException $ UnresolvedSymbol s
+lookupEnv (Cons (Cons x _) e) s = Left $ RuntimeException $ TypeError [SymbolType] (typeOf x)
+lookupEnv (Cons x e) s = Left $ RuntimeException $ TypeError [ConsType] (typeOf x)
+lookupEnv x s = Left $ RuntimeException $ TypeError [ConsType] (typeOf x)
 
 eval :: Env -> Value -> Result
 eval _ Nil = return Nil
-eval e (Symbol s) = lookupEnv e s
+eval e s@(Symbol _) = lookupEnv e s
 eval e (Lambda f source) = Left $ RuntimeException $ TypeError [NilType, ConsType, SymbolType] LambdaType
 eval e c@(Cons a d) =
   case a of
@@ -40,8 +43,9 @@ eval e c@(Cons a d) =
         (Lambda f source) -> f args
         otherwise -> Left $ RuntimeException $ TypeError [LambdaType] (typeOf f)
 
-withEnv :: [String] -> [Value] -> Env -> Either SchemeException Env
-withEnv params args e | (paramCount == argCount) = return $ (params `zip` args) ++ e
+withEnv :: [Value] -> [Value] -> Env -> Either SchemeException Env
+withEnv params args e | (paramCount == argCount) = return $ foldr Cons e $
+                                                   zipWith Cons params args
                       | otherwise = Left (RuntimeException $ ArityException paramCount argCount)
   where paramCount = length params
         argCount = length args
@@ -50,7 +54,7 @@ evalLambda :: Env -> Value -> Result
 evalLambda e fnbody = do
   [arglist,body] <- asList "lambda body" fnbody
   params <- asList "lambda parameter list" arglist
-  let f args = (withEnv (map name params) args e) >>= (flip eval) body
+  let f args = (withEnv params args e) >>= (flip eval) body
   return $ Lambda f (Cons (Symbol "lambda") fnbody)
 
 
@@ -90,4 +94,5 @@ sCdr = schemeFn "cdr" cdr
         cdr x = fail $ "Can't get cdr of non-cons: " ++ (show x)
 
 initialEnv :: Env
-initialEnv = [("eq?", sEq), ("cons", sCons), ("car", sCar), ("cdr", sCdr)]
+initialEnv = asCons $ map (\(s, x) -> (Cons (Symbol s) x)) $
+             [("eq?", sEq), ("cons", sCons), ("car", sCar), ("cdr", sCdr)]

@@ -5,10 +5,10 @@ module Flatland.Scheme.Types where
 import Text.ParserCombinators.Parsec
 import Data.List (intercalate)
 
-data CompilerException = UnresolvedSymbol String
+data CompilerException = UnresolvedSymbol Value
                        | ImproperListException {context :: String, value :: Value}
 instance Show CompilerException where
-  show (UnresolvedSymbol s) = "Unable to resolve symbol " ++ s
+  show (UnresolvedSymbol s) = "Unable to resolve symbol " ++ (show s)
   show (ImproperListException context value) = "Expected proper list for " ++
                                                context ++ ", but got " ++ (show value)
 
@@ -36,7 +36,7 @@ instance Show SchemeType where
   show SymbolType = "symbol"
   show LambdaType = "compiled function"
 
-type Env = [(String, Value)]
+type Env = Value -- a list of (Cons Symbol Value) elements
 type Lambda = [Value] -> Result
 
 instance Eq Lambda where { _ == _ = False }
