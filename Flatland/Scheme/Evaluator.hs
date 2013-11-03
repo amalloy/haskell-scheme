@@ -22,8 +22,7 @@ eval _ Nil = return Nil
 eval e (Symbol s) = lookupEnv e s
 eval e (Lambda f source) = Left $ RuntimeException $ TypeError [NilType, ConsType, SymbolType] LambdaType
 eval e c@(Cons a d) =
-  let resolve = lookupEnv e
-  in case a of
+  case a of
     (Symbol "quote") -> return $ car d
     (Symbol "lambda") -> evalLambda e d
     (Symbol "if") -> do
