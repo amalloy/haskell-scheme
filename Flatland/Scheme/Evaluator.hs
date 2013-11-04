@@ -25,6 +25,7 @@ lookupEnv x s = Left $ RuntimeException $ TypeError [ConsType] (typeOf x)
 
 eval :: Env -> Value -> Result
 eval _ Nil = return Nil
+eval e (Symbol "*env*") = return e
 eval e s@(Symbol _) = lookupEnv e s
 eval e (Lambda f source) = Left $ RuntimeException $ TypeError [NilType, ConsType, SymbolType] LambdaType
 eval e c@(Cons a d) =
@@ -94,6 +95,9 @@ sCar = consFn car
 sCdr :: Value
 sCdr = consFn cdr
 
+sEval :: Value
+sEval = schemeFn2 eval
+
 initialEnv :: Env
-initialEnv = asCons $ map (\(s, x) -> (Cons (Symbol s) x)) $
-             [("eq?", sEq), ("cons", sCons), ("car", sCar), ("cdr", sCdr)]
+initialEnv = asCons $ map (\(s, x) -> (Cons (Symbol s) x))
+  [("eq?", sEq), ("cons", sCons), ("car", sCar), ("cdr", sCdr), ("eval", sEval)]
