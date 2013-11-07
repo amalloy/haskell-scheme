@@ -41,7 +41,4 @@ read = runParser parseValue () "stdin"
 
 -- this function doesn't belong here long-term, but is useful for playing around
 readEval :: String -> Result
-readEval s =
-  case (read s) of
-    (Left e) -> Left (ReaderException e)
-    (Right v) -> eval initialEnv v
+readEval = either (Left . ReaderException) (eval initialEnv) . read
