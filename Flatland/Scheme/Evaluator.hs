@@ -64,7 +64,7 @@ evalLambda :: Env -> Value -> Result
 evalLambda e fnbody = do
   [arglist,body] <- asList "lambda body" fnbody
   params <- asList "lambda parameter list" arglist
-  let f args = (withEnv params args e) >>= (flip eval) body
+  let f args = (withEnv params args e) >>= (`eval` body)
   return $ Lambda f (Cons (Symbol "lambda") fnbody)
 
 
