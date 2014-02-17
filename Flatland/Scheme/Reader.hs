@@ -16,22 +16,22 @@ parseQuote = do
   many whitespace
   e <- parseValue
   many whitespace
-  return $ Cons (Symbol "quote") (Cons e Nil)
+  return . Cons (Symbol "quote") $ Cons e Nil
 
 parseNil :: CharParser () Value
-parseNil = (string "nil") >> return Nil
+parseNil = string "nil" >> return Nil
 
 parseSymbol :: CharParser () Value
 parseSymbol = liftM Symbol (many1 (noneOf " \n\t()"))
 
-whitespace = (oneOf " \n\t")
+whitespace = oneOf " \n\t"
 
 parseList :: CharParser () Value
 parseList = do
   many whitespace
   char '('
   many whitespace
-  exprs <- parseValue `sepEndBy` (many whitespace)
+  exprs <- parseValue `sepEndBy` many whitespace
   char ')'
   many whitespace
   return $ foldr Cons Nil exprs

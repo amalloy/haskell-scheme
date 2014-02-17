@@ -46,7 +46,7 @@ eval e c@(Cons a d) =
           eval e (if v == Nil then f else t)
         otherwise -> arityException 3 (length body)
     otherwise -> do
-      argList <- (asList "arguments to lambda" c)
+      argList <- asList "arguments to lambda" c
       (f:args) <- forM argList (eval e)
       -- note we're not handling [] at all - that case is impossible, because we already know we have a Cons
       case f of
@@ -54,8 +54,8 @@ eval e c@(Cons a d) =
         otherwise -> typeError [LambdaType] (typeOf f)
 
 withEnv :: [Value] -> [Value] -> Env -> Either SchemeException Env
-withEnv params args e | (paramCount == argCount) = return $ foldr Cons e $
-                                                   zipWith Cons params args
+withEnv params args e | paramCount == argCount = return $ foldr Cons e $
+                                                 zipWith Cons params args
                       | otherwise = arityException paramCount argCount
   where paramCount = length params
         argCount = length args
@@ -64,7 +64,7 @@ evalLambda :: Env -> Value -> Result
 evalLambda e fnbody = do
   [arglist,body] <- asList "lambda body" fnbody
   params <- asList "lambda parameter list" arglist
-  let f args = (withEnv params args e) >>= (`eval` body)
+  let f args = withEnv params args e >>= (`eval` body)
   return $ Lambda f (Cons (Symbol "lambda") fnbody)
 
 
@@ -83,7 +83,7 @@ schemeFn2 f = Lambda g nativeCode
 
 sEq :: Value
 sEq = schemeFn2 eq
-  where eq x y = return $ if x == y then (Symbol "t") else Nil
+  where eq x y = return $ if x == y then Symbol "t" else Nil
 
 sCons :: Value
 -- sCons = schemeFn2 "cons" (return .) . Cons -- this would work, but confuses me
